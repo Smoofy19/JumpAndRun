@@ -1,0 +1,11 @@
+name: JumpAndRun
+version: '${project.version}'
+main: de.smoofy.jumpandrun.main.JAR
+api-version: 1.19
+authors: [ Smoofy ]
+description: A simple JumpAndRun Plugin.
+website: http://dc.smoofy19.de/
+commands:
+  jumpandrun:
+    aliases:
+      - jar
