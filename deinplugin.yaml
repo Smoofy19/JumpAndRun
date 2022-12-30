@@ -1,0 +1,19 @@
+specVersion: 1
+type: plugin
+name: JumpAndRun
+authors:
+  - Smoofy
+supportedPlatforms: paper
+supportedGameVersions: ^1.19.3
+category: misc
+introduction: Ein Plugin, um JumpandRun's zu erstellen.
+description: |
+  # Überblick
+    Dieses Plugin erlaubt es JumpandRun's zu erstellen. 
+  
+  # Nutzung
+    Nutze '/jar setup' und folge den Anweisungen im Chat
+installation: |
+  - Lade das Plugin herunter
+  - Lege die Datei in den 'plugins' Ordner deines Paper Servers
+  - Starte den Server neu
