@@ -9,10 +9,16 @@ category: misc
 introduction: Ein Plugin, um JumpandRun's zu erstellen.
 description: |
   # Überblick
-    Dieses Plugin erlaubt es JumpandRun's zu erstellen. 
+  Dieses Plugin erlaubt es JumpandRun's zu erstellen. 
   
   # Nutzung
-    Nutze '/jar setup' und folge den Anweisungen im Chat
+  Nutze '/jar setup' und folge den Anweisungen im Chat
+  
+  # Commands
+  - /jar setup
+  - /jar create
+  - /jar delete <Name>
+  - /jar list
 installation: |
   - Lade das Plugin herunter
   - Lege die Datei in den 'plugins' Ordner deines Paper Servers
