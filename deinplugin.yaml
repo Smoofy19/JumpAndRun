@@ -3,13 +3,14 @@ type: plugin
 name: JumpAndRun
 authors:
   - Smoofy
-supportedPlatforms: paper
+supportedPlatforms:
+  - paper
 supportedGameVersions: ^1.19.3
 category: misc
 introduction: Ein Plugin, um JumpandRun's zu erstellen.
 description: |
   # Überblick
-  Dieses Plugin erlaubt es JumpandRun's zu erstellen. 
+  Dieses Plugin erlaubt es JumpandRun's zu erstellen.
   
   # Nutzung
   Nutze '/jar setup' und folge den Anweisungen im Chat
