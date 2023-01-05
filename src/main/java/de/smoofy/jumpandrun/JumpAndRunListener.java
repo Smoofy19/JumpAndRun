@@ -70,13 +70,14 @@ public class JumpAndRunListener implements Listener {
                 return;
             }
             switch (jumpAndRunManager.getSetup().get(player)) {
-                case NAME:
+                case NAME -> {
                     jumpAndRunManager.setName(message);
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast den Namen des §2§lJumpAndRun's §7gesetzt§8."));
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Tippe den Namen vom Builder des §2§lJumpAndRun's §7in den Chat§8."));
                     jumpAndRunManager.getSetup().put(player, SetupStep.BUILDER);
-                    break;
-                case BUILDER:
+
+                }
+                case BUILDER -> {
                     jumpAndRunManager.setBuilder(message);
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast den Builder des §2§lJumpAndRun's §7gesetzt§8."));
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Tippe die Difficulty-ID des §2§lJumpAndRun's §7in den Chat§8."));
@@ -84,32 +85,44 @@ public class JumpAndRunListener implements Listener {
                         player.sendMessage(Component.text(" §8» " + difficulty.getColor() + difficulty.name() + "§8(" +
                                 difficulty.getColor() + difficulty.getId() + "§8)"));
                     jumpAndRunManager.getSetup().put(player, SetupStep.DIFFICULTY);
-                    break;
-                case DIFFICULTY:
+                }
+                case DIFFICULTY -> {
                     jumpAndRunManager.setDifficulty(JumpAndRun.Difficulty.getDifficultyById(Integer.parseInt(message)));
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast die Difficulty des §2§lJumpAndRun's §7gesetzt§8."));
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf die Startlocation und tippe §8'§2§lset§8' §7in den Chat§8."));
                     jumpAndRunManager.getSetup().put(player, SetupStep.STARTLOCATION);
-                    break;
-                case STARTLOCATION:
+                }
+                case STARTLOCATION -> {
+                    if (!player.getLocation().getBlock().getType().equals(Material.OAK_PRESSURE_PLATE)) {
+                        player.sendMessage(Component.text(JAR.getPrefix() + "§cDu musst auf einer §4" + Material.OAK_PRESSURE_PLATE.name() + " §cstehen§8."));
+                        return;
+                    }
                     jumpAndRunManager.setStartLocation(player.getLocation());
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast die Startlocation des §2§lJumpAndRun's §7gesetzt§8."));
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf die Endlocation und tippe §8'§2§lset§8' §7in den Chat§8."));
                     jumpAndRunManager.getSetup().put(player, SetupStep.ENDLOCATION);
-                    break;
-                case ENDLOCATION:
+                }
+                case ENDLOCATION -> {
+                    if (!player.getLocation().getBlock().getType().equals(Material.HEAVY_WEIGHTED_PRESSURE_PLATE)) {
+                        player.sendMessage(Component.text(JAR.getPrefix() + "§cDu musst auf einer §4" + Material.HEAVY_WEIGHTED_PRESSURE_PLATE.name() + " §cstehen§8."));
+                        return;
+                    }
                     jumpAndRunManager.setEndLocation(player.getLocation());
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast die Endlocation des §2§lJumpAndRun's §7gesetzt§8."));
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf einen Checkpoint und tippe §8'§2§lset§8' §7in den Chat§8."));
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Um das §2§lJumpAndRun §7zu erstellen §8» §c/jar create"));
                     jumpAndRunManager.getSetup().put(player, SetupStep.CHECKPOINTS);
-                    break;
-                case CHECKPOINTS:
+                }
+                case CHECKPOINTS -> {
+                    if (!player.getLocation().getBlock().getType().equals(Material.LIGHT_WEIGHTED_PRESSURE_PLATE)) {
+                        player.sendMessage(Component.text(JAR.getPrefix() + "§cDu musst auf einer §4" + Material.LIGHT_WEIGHTED_PRESSURE_PLATE.name() + " §cstehen§8."));
+                        return;
+                    }
                     jumpAndRunManager.addCheckpoint(player.getLocation());
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast den Checkpoint des §2§lJumpAndRun's §7gesetzt§8."));
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf einen weiteren Checkpoint und tippe §8'§2§lset§8' §7in den Chat§8."));
                     player.sendMessage(Component.text(JAR.getPrefix() + "§7Um das §2§lJumpAndRun §7zu erstellen §8» §c/jar create"));
-                    break;
+                }
             }
         }
     }
