@@ -2,7 +2,7 @@ specVersion: 1
 type: plugin
 name: JumpAndRun
 authors:
-  - Smoofy
+  - Smoofy19
 supportedPlatforms:
   - paper
 supportedGameVersions: ^1.19.3
