@@ -3,7 +3,8 @@ package de.smoofy.jumpandrun;
 import de.smoofy.jumpandrun.main.JAR;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -13,6 +14,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
 
 /**
  * @author - Smoofy
@@ -41,7 +44,8 @@ public class JumpAndRunListener implements Listener {
             } else if (player.getLocation().getBlock().getType().equals(Material.LIGHT_WEIGHTED_PRESSURE_PLATE)) {
                 if (player.getLocation().getBlockX() == jumpAndRunManager.getCheckpoint(player).getBlockX() &&
                         player.getLocation().getBlockY() == jumpAndRunManager.getCheckpoint(player).getBlockY() &&
-                        player.getLocation().getBlockZ() == jumpAndRunManager.getCheckpoint(player).getBlockZ()) return;
+                        player.getLocation().getBlockZ() == jumpAndRunManager.getCheckpoint(player).getBlockZ())
+                    return;
                 for (Location checkpoint : playerJumpAndRun.getCheckpoints()) {
                     if (player.getLocation().getBlockX() == checkpoint.getBlockX()
                             && player.getLocation().getBlockY() == checkpoint.getBlockY()
@@ -66,62 +70,155 @@ public class JumpAndRunListener implements Listener {
             String message = PlainTextComponentSerializer.plainText().serialize(event.message()).split(" ")[0];
             if (event.message().toString().equalsIgnoreCase("cancel")) {
                 jumpAndRunManager.getSetup().remove(player);
-                player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast das Setup für das §2§lJumpAndRun §7abgebrochen§8."));
+                player.sendMessage(JAR.getPrefix()
+                        .append(Component.text("Du hast das Setup für das ", NamedTextColor.GRAY))
+                        .append(Component.text("JumpAndRun ", NamedTextColor.DARK_GRAY, TextDecoration.BOLD))
+                        .append(Component.text("abgebrochen.", NamedTextColor.GRAY)));
+
                 return;
             }
             switch (jumpAndRunManager.getSetup().get(player)) {
                 case NAME -> {
                     jumpAndRunManager.setName(message);
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast den Namen des §2§lJumpAndRun's §7gesetzt§8."));
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Tippe den Namen vom Builder des §2§lJumpAndRun's §7in den Chat§8."));
-                    jumpAndRunManager.getSetup().put(player, SetupStep.BUILDER);
 
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Du hast den Namen des ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("gesetzt.", NamedTextColor.GRAY)));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Tippe den Namen vom Builder des ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                    jumpAndRunManager.getSetup().put(player, SetupStep.BUILDER);
                 }
                 case BUILDER -> {
                     jumpAndRunManager.setBuilder(message);
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast den Builder des §2§lJumpAndRun's §7gesetzt§8."));
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Tippe die Difficulty-ID des §2§lJumpAndRun's §7in den Chat§8."));
-                    for (JumpAndRun.Difficulty difficulty : JumpAndRun.Difficulty.values())
-                        player.sendMessage(Component.text(" §8» " + difficulty.getColor() + difficulty.name() + "§8(" +
-                                difficulty.getColor() + difficulty.getId() + "§8)"));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Du hast den Builder des ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("gesetzt.", NamedTextColor.GRAY)));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Tippe die Difficulty-ID des ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                    for (JumpAndRun.Difficulty difficulty : JumpAndRun.Difficulty.values()) {
+                        player.sendMessage(Component.text(" » ", NamedTextColor.DARK_GRAY)
+                                .append(Component.text(difficulty.name(), difficulty.getColor()))
+                                .append(Component.text("(", NamedTextColor.DARK_GRAY))
+                                .append(Component.text(difficulty.getId(), difficulty.getColor()))
+                                .append(Component.text(")", NamedTextColor.DARK_GRAY)));
+                    }
+
                     jumpAndRunManager.getSetup().put(player, SetupStep.DIFFICULTY);
                 }
                 case DIFFICULTY -> {
                     jumpAndRunManager.setDifficulty(JumpAndRun.Difficulty.getDifficultyById(Integer.parseInt(message)));
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast die Difficulty des §2§lJumpAndRun's §7gesetzt§8."));
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf die Startlocation und tippe §8'§2§lset§8' §7in den Chat§8."));
-                    jumpAndRunManager.getSetup().put(player, SetupStep.STARTLOCATION);
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Du hast die Difficulty des ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("gesetzt.", NamedTextColor.GRAY)));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Stelle dich auf die Startlocation und tippe ", NamedTextColor.GRAY))
+                            .append(Component.text("'", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("set", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("' ", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                    jumpAndRunManager.getSetup().put(player, SetupStep.START_LOCATION);
                 }
-                case STARTLOCATION -> {
+                case START_LOCATION -> {
                     if (!player.getLocation().getBlock().getType().equals(Material.OAK_PRESSURE_PLATE)) {
-                        player.sendMessage(Component.text(JAR.getPrefix() + "§cDu musst auf einer §4" + Material.OAK_PRESSURE_PLATE.name() + " §cstehen§8."));
+                        player.sendMessage(JAR.getPrefix()
+                                .append(Component.text("Du musst auf einer ", NamedTextColor.RED))
+                                .append(Component.text(Material.OAK_PRESSURE_PLATE.name(), NamedTextColor.DARK_RED))
+                                .append(Component.text(" stehen.", NamedTextColor.RED)));
+
                         return;
                     }
                     jumpAndRunManager.setStartLocation(player.getLocation());
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast die Startlocation des §2§lJumpAndRun's §7gesetzt§8."));
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf die Endlocation und tippe §8'§2§lset§8' §7in den Chat§8."));
-                    jumpAndRunManager.getSetup().put(player, SetupStep.ENDLOCATION);
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Du hast die Startlocation des ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("gesetzt.", NamedTextColor.GRAY)));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Stelle dich auf die Endlocation und tippe ", NamedTextColor.GRAY))
+                            .append(Component.text("'", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("set", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("' ", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                    jumpAndRunManager.getSetup().put(player, SetupStep.END_LOCATION);
                 }
-                case ENDLOCATION -> {
+                case END_LOCATION -> {
                     if (!player.getLocation().getBlock().getType().equals(Material.HEAVY_WEIGHTED_PRESSURE_PLATE)) {
-                        player.sendMessage(Component.text(JAR.getPrefix() + "§cDu musst auf einer §4" + Material.HEAVY_WEIGHTED_PRESSURE_PLATE.name() + " §cstehen§8."));
+                        player.sendMessage(JAR.getPrefix()
+                                .append(Component.text("Du musst auf einer ", NamedTextColor.RED))
+                                .append(Component.text(Material.HEAVY_WEIGHTED_PRESSURE_PLATE.name(), NamedTextColor.DARK_RED))
+                                .append(Component.text(" stehen.", NamedTextColor.RED)));
+
                         return;
                     }
                     jumpAndRunManager.setEndLocation(player.getLocation());
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast die Endlocation des §2§lJumpAndRun's §7gesetzt§8."));
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf einen Checkpoint und tippe §8'§2§lset§8' §7in den Chat§8."));
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Um das §2§lJumpAndRun §7zu erstellen §8» §c/jar create"));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Du hast die Endlocation des ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("gesetzt.", NamedTextColor.GRAY)));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Stelle dich auf einen Checkpoint und tippe ", NamedTextColor.GRAY))
+                            .append(Component.text("'", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("set", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("' ", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Um das ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("zu erstellen ", NamedTextColor.GRAY))
+                            .append(Component.text("» ", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("/jar create", NamedTextColor.RED)));
+
                     jumpAndRunManager.getSetup().put(player, SetupStep.CHECKPOINTS);
                 }
                 case CHECKPOINTS -> {
                     if (!player.getLocation().getBlock().getType().equals(Material.LIGHT_WEIGHTED_PRESSURE_PLATE)) {
-                        player.sendMessage(Component.text(JAR.getPrefix() + "§cDu musst auf einer §4" + Material.LIGHT_WEIGHTED_PRESSURE_PLATE.name() + " §cstehen§8."));
+                        player.sendMessage(JAR.getPrefix()
+                                .append(Component.text("Du musst auf einer ", NamedTextColor.RED))
+                                .append(Component.text(Material.LIGHT_WEIGHTED_PRESSURE_PLATE.name(), NamedTextColor.DARK_RED))
+                                .append(Component.text(" stehen.", NamedTextColor.RED)));
+
                         return;
                     }
                     jumpAndRunManager.addCheckpoint(player.getLocation());
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast den Checkpoint des §2§lJumpAndRun's §7gesetzt§8."));
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf einen weiteren Checkpoint und tippe §8'§2§lset§8' §7in den Chat§8."));
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Um das §2§lJumpAndRun §7zu erstellen §8» §c/jar create"));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Du hast den Checkpoint des ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("gesetzt.", NamedTextColor.GRAY)));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Stelle dich auf einen weiteren Checkpoint und tippe ", NamedTextColor.GRAY))
+                            .append(Component.text("'", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("set", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("' ", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Um das ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("zu erstellen ", NamedTextColor.GRAY))
+                            .append(Component.text("» ", NamedTextColor.DARK_GRAY))
+                            .append(Component.text("/jar create", NamedTextColor.RED)));
                 }
             }
         }
@@ -131,19 +228,21 @@ public class JumpAndRunListener implements Listener {
     public void onAct(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         JumpAndRunManager jumpAndRunManager = JAR.getInstance().getJumpAndRunManager();
-        if (event.getItem() == null) return;
-        if (!event.getItem().getType().equals(Material.ORANGE_DYE) && !event.getItem().getType().equals(Material.RED_DYE))
-            return;
-        if (event.getItem().getItemMeta() == null) return;
-        if (!event.getItem().getItemMeta().hasDisplayName()) return;
-        if (event.getItem().getItemMeta().displayName() == null) return;
-        String displayName = LegacyComponentSerializer.legacyAmpersand().serialize(event.getItem().getItemMeta().displayName());
-        if (displayName.equals("§6Zurück zum Checkpoint")) {
+
+        if (!jumpAndRunManager.isInJumpAndRun(player)) return;
+
+        ItemStack item = event.getItem();
+        if (item == null) return;
+        if (!item.getType().equals(Material.ORANGE_DYE) && !event.getItem().getType().equals(Material.RED_DYE)) return;
+        if (item.getItemMeta() == null) return;
+
+        PersistentDataContainer container = item.getItemMeta().getPersistentDataContainer();
+        if (container.has(jumpAndRunManager.getCheckpointKey())) {
             jumpAndRunManager.addFail(player);
             player.teleport(jumpAndRunManager.getCheckpoint(player));
             return;
         }
-        if (displayName.equals("§cJumpAndRun abbrechen"))
+        if (container.has(jumpAndRunManager.getAbortKey()))
             jumpAndRunManager.abortJumpAndRun(player);
     }
 }

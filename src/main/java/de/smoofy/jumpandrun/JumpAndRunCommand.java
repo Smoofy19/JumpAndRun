@@ -2,11 +2,16 @@ package de.smoofy.jumpandrun;
 
 import de.smoofy.jumpandrun.main.JAR;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 /**
  * @author - Smoofy
@@ -17,75 +22,149 @@ import org.bukkit.entity.Player;
 public class JumpAndRunCommand implements CommandExecutor {
 
     public JumpAndRunCommand() {
-        Bukkit.getPluginCommand("jumpandrun").setExecutor(this);
+        Objects.requireNonNull(Bukkit.getPluginCommand("jumpandrun")).setExecutor(this);
     }
 
     @Override
-    public boolean onCommand(CommandSender commandSender, Command command, String s, String[] args) {
-        if (!(commandSender instanceof Player)) {
-            commandSender.sendMessage(Component.text(JAR.getPrefix() + "§cDu musst ein Spieler sein."));
+    public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, String[] args) {
+        if (!(commandSender instanceof Player player)) {
+            commandSender.sendMessage(JAR.getPrefix().append(Component.text("Du musst ein Spieler sein.", NamedTextColor.RED)));
             return false;
         }
-        Player player = (Player) commandSender;
         if (!player.hasPermission("jar.setup")) {
-            player.sendMessage(Component.text(JAR.getPrefix() + "§cDazu hast du keine Rechte."));
+            player.sendMessage(JAR.getPrefix().append(Component.text("Dazu hast du keine Rechte.", NamedTextColor.RED)));
             return false;
         }
         if (args.length != 1 && args.length != 2) {
-            player.sendMessage(Component.text(JAR.getPrefix() + "§7Verwende§8: §c/jar [setup,list,create,delete] <Name>"));
+            this.sendUsage(player);
             return false;
         }
         JumpAndRunManager jumpAndRunManager = JAR.getInstance().getJumpAndRunManager();
         if (args.length == 1) {
             if (args[0].equalsIgnoreCase("setup")) {
                 if (jumpAndRunManager.getSetup().containsKey(player)) {
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Du befindest dich bereits im §2§lJumpAndRun §7Setup§8."));
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Du befindest dich bereits im ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text("Setup.", NamedTextColor.GRAY)));
+
                     switch (jumpAndRunManager.getSetup().get(player)) {
-                        case NAME:
-                            player.sendMessage(Component.text(JAR.getPrefix() + "§7Tippe den Namen des §2§lJumpAndRun's §7in den Chat§8."));
-                            break;
-                        case BUILDER:
-                            player.sendMessage(Component.text(JAR.getPrefix() + "§7Tippe den Namen vom Builder des §2§lJumpAndRun's §7in den Chat§8."));
-                            break;
-                        case DIFFICULTY:
-                            player.sendMessage(Component.text(JAR.getPrefix() + "§7Tippe die Difficulty-ID des §2§lJumpAndRun's §7in den Chat§8."));
-                            for (JumpAndRun.Difficulty difficulty : JumpAndRun.Difficulty.values())
-                                player.sendMessage(Component.text(" §8» " + difficulty.getColor() + difficulty.name() + "§8(" +
-                                        difficulty.getColor() + difficulty.getId() + "§8)"));
-                            break;
-                        case STARTLOCATION:
-                            player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf die Startlocation und tippe §8'§2§lset§8' §7in den Chat§8."));
-                            break;
-                        case ENDLOCATION:
-                            player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf die Endlocation und tippe §8'§2§lset§8' §7in den Chat§8."));
-                            break;
-                        case CHECKPOINTS:
-                            player.sendMessage(Component.text(JAR.getPrefix() + "§7Stelle dich auf einen Checkpoints und tippe §8'§2§lset§8' §7in den Chat§8."));
-                            player.sendMessage(Component.text(JAR.getPrefix() + "§7Um das §2§lJumpAndRun §7zu erstellen §8» §c/jar create"));
-                            break;
+                        case NAME -> player.sendMessage(JAR.getPrefix()
+                                .append(Component.text("Tippe den Namen des ", NamedTextColor.GRAY)
+                                        .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                                        .append(Component.text("in den Chat.", NamedTextColor.GRAY))));
+
+                        case BUILDER -> player.sendMessage(JAR.getPrefix()
+                                .append(Component.text("Tippe den Namen vom Builder des ", NamedTextColor.GRAY)
+                                        .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                                        .append(Component.text("in den Chat.", NamedTextColor.GRAY))));
+
+                        case DIFFICULTY -> {
+                            player.sendMessage(JAR.getPrefix()
+                                    .append(Component.text("Tippe die Difficulty-ID des ", NamedTextColor.GRAY))
+                                    .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                                    .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                            for (JumpAndRun.Difficulty difficulty : JumpAndRun.Difficulty.values()) {
+                                player.sendMessage(Component.text(" » ", NamedTextColor.DARK_GRAY)
+                                        .append(Component.text(difficulty.name(), difficulty.getColor()))
+                                        .append(Component.text("(", NamedTextColor.DARK_GRAY))
+                                        .append(Component.text(difficulty.getId(), difficulty.getColor()))
+                                        .append(Component.text(")", NamedTextColor.DARK_GRAY)));
+                            }
+                        }
+
+                        case START_LOCATION -> player.sendMessage(JAR.getPrefix()
+                                .append(Component.text("Stelle dich auf die Startlocation und tippe ", NamedTextColor.GRAY))
+                                .append(Component.text("'", NamedTextColor.DARK_GRAY))
+                                .append(Component.text("set", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                                .append(Component.text("' ", NamedTextColor.DARK_GREEN))
+                                .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                        case END_LOCATION -> player.sendMessage(JAR.getPrefix()
+                                .append(Component.text("Stelle dich auf die Endlocation und tippe ", NamedTextColor.GRAY))
+                                .append(Component.text("'", NamedTextColor.DARK_GRAY))
+                                .append(Component.text("set", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                                .append(Component.text("' ", NamedTextColor.DARK_GREEN))
+                                .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                        case CHECKPOINTS -> {
+                            player.sendMessage(JAR.getPrefix()
+                                    .append(Component.text("Stelle dich auf einen Checkpoint und tippe ", NamedTextColor.GRAY))
+                                    .append(Component.text("'", NamedTextColor.DARK_GRAY))
+                                    .append(Component.text("set", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                                    .append(Component.text("' ", NamedTextColor.DARK_GREEN))
+                                    .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                            player.sendMessage(JAR.getPrefix()
+                                    .append(Component.text("Um das ", NamedTextColor.GRAY))
+                                    .append(Component.text("JumpAndRun ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                                    .append(Component.text("zu erstellen ", NamedTextColor.GRAY))
+                                    .append(Component.text("» ", NamedTextColor.DARK_GRAY))
+                                    .append(Component.text("/jar create", NamedTextColor.RED)));
+                        }
                     }
                     return false;
                 }
                 jumpAndRunManager.getSetup().put(player, SetupStep.NAME);
-                player.sendMessage(Component.text(JAR.getPrefix() + "§7Tippe den Namen des §2§lJumpAndRun's §7in den Chat§8."));
-                player.sendMessage(Component.text(JAR.getPrefix() + "§7Du kannst jederzeit das Setup des §2§lJumpAndRun's §7mit §8'§2§lcancel§8' §7abbrechen§8."));
+
+                player.sendMessage(JAR.getPrefix()
+                        .append(Component.text("Tippe den Namen des ", NamedTextColor.GRAY))
+                        .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                        .append(Component.text("in den Chat.", NamedTextColor.GRAY)));
+
+                player.sendMessage(JAR.getPrefix()
+                        .append(Component.text("Du kannst jederzeit das Setup des ", NamedTextColor.GRAY))
+                        .append(Component.text("JumpAndRun's ", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                        .append(Component.text("mit ", NamedTextColor.GRAY))
+                        .append(Component.text("'", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("cancel", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                        .append(Component.text("' ", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("abbrechen.", NamedTextColor.GRAY)));
+
             } else if (args[0].equalsIgnoreCase("list")) {
-                if (jumpAndRunManager.getJumpAndRuns().size() == 0) {
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Es existieren keine §2§lJumpAndRun's§8."));
+                if (jumpAndRunManager.getJumpAndRuns().isEmpty()) {
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Es existieren keine ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun's", NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text(".", NamedTextColor.GRAY)));
+
                     return false;
                 }
-                player.sendMessage(Component.text(JAR.getPrefix() + "§7JumpAndRun's§8:"));
+                player.sendMessage(JAR.getPrefix()
+                        .append(Component.text("JumpAndRun's", NamedTextColor.GRAY))
+                        .append(Component.text(":", NamedTextColor.DARK_GRAY)));
+
                 for (String name : jumpAndRunManager.getJumpAndRuns().keySet()) {
                     JumpAndRun jumpAndRun = jumpAndRunManager.getJumpAndRun(name);
-                    player.sendMessage(Component.text(" §8» §2§l" + jumpAndRun.getName() + "§7 von §2" + jumpAndRun.getBuilder() + " §8║ " + jumpAndRun.getDifficulty().getColor() + jumpAndRun.getDifficulty().name()));
+                    player.sendMessage(Component.text(" » ", NamedTextColor.DARK_GRAY)
+                            .append(Component.text(jumpAndRun.getName(), NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                            .append(Component.text(" von ", NamedTextColor.GRAY))
+                            .append(Component.text(jumpAndRun.getBuilder(), NamedTextColor.DARK_GREEN))
+                            .append(Component.text(" ║ ", NamedTextColor.DARK_GRAY))
+                            .append(Component.text(jumpAndRun.getDifficulty().name(), jumpAndRun.getDifficulty().getColor())));
                 }
             } else if (args[0].equalsIgnoreCase("create")) {
                 if (jumpAndRunManager.getEndLocation() == null) {
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast das §c§lJumpAndRun §7noch nicht vollständig eingerichtet§8!"));
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Du hast das ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun ", NamedTextColor.RED, TextDecoration.BOLD))
+                            .append(Component.text("noch nicht vollständig eingerichtet!", NamedTextColor.GRAY)));
+
                     return false;
                 }
-                jumpAndRunManager.addJumpAndRun(jumpAndRunManager.getName(), jumpAndRunManager.getBuilder(), jumpAndRunManager.getDifficulty(), jumpAndRunManager.getStartLocation(), jumpAndRunManager.getEndLocation(), jumpAndRunManager.getCheckpoints());
-                player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast das §2JumpAndRun §l" + jumpAndRunManager.getName() + "§7 von §2" + jumpAndRunManager.getBuilder() + "§7 erstellt§8."));
+                jumpAndRunManager.addJumpAndRun(jumpAndRunManager.getName(), jumpAndRunManager.getBuilder(),
+                        jumpAndRunManager.getDifficulty(), jumpAndRunManager.getStartLocation(),
+                        jumpAndRunManager.getEndLocation(), jumpAndRunManager.getCheckpoints());
+
+                player.sendMessage(JAR.getPrefix()
+                        .append(Component.text("Du hast das ", NamedTextColor.GRAY))
+                        .append(Component.text("JumpAndRun ", NamedTextColor.DARK_GREEN))
+                        .append(Component.text(jumpAndRunManager.getName(), NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                        .append(Component.text(" von ", NamedTextColor.GRAY))
+                        .append(Component.text(jumpAndRunManager.getBuilder(), NamedTextColor.DARK_GREEN))
+                        .append(Component.text(" erstellt.", NamedTextColor.GRAY)));
+
                 jumpAndRunManager.getSetup().remove(player);
                 jumpAndRunManager.setName(null);
                 jumpAndRunManager.setBuilder(null);
@@ -94,20 +173,38 @@ public class JumpAndRunCommand implements CommandExecutor {
                 jumpAndRunManager.setEndLocation(null);
                 jumpAndRunManager.setCheckpoints(null);
             } else {
-                player.sendMessage(Component.text(JAR.getPrefix() + "§7Verwende§8: §c/jar [setup,list,create]"));
+                this.sendUsage(player);
             }
         } else {
             if (args[0].equalsIgnoreCase("delete")) {
                 if (jumpAndRunManager.getJumpAndRun(args[1]) == null) {
-                    player.sendMessage(Component.text(JAR.getPrefix() + "§7Das §cJumpAndRun §2§l" + args[1] + "§7 existiert nicht§8."));
+                    player.sendMessage(JAR.getPrefix()
+                            .append(Component.text("Das ", NamedTextColor.GRAY))
+                            .append(Component.text("JumpAndRun ", NamedTextColor.RED, TextDecoration.BOLD))
+                            .append(Component.text(args[1], NamedTextColor.RED, TextDecoration.BOLD))
+                            .append(Component.text(" existiert nicht.", NamedTextColor.GRAY)));
+
                     return false;
                 }
                 jumpAndRunManager.deleteJumpAndRun(args[1]);
-                player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast das §2JumpAndRun §l" + args[1] + "§7 gelöscht§8."));
+
+                player.sendMessage(JAR.getPrefix()
+                        .append(Component.text("Du hast das ", NamedTextColor.GRAY))
+                        .append(Component.text("JumpAndRun ", NamedTextColor.DARK_GREEN))
+                        .append(Component.text(args[1], NamedTextColor.DARK_GREEN, TextDecoration.BOLD))
+                        .append(Component.text(" gelöscht.", NamedTextColor.GRAY)));
+
             } else {
-                player.sendMessage(Component.text(JAR.getPrefix() + "§7Verwende§8: §c/jar [delete] [Name]"));
+                this.sendUsage(player);
             }
         }
         return true;
+    }
+
+    private void sendUsage(Player player) {
+        player.sendMessage(JAR.getPrefix()
+                .append(Component.text("Verwende", NamedTextColor.GRAY))
+                .append(Component.text(": ", NamedTextColor.DARK_GRAY))
+                .append(Component.text("/jar [setup,list,create,delete] <Name>", NamedTextColor.RED)));
     }
 }
