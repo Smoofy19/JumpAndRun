@@ -2,6 +2,7 @@ package de.smoofy.jumpandrun;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 
 import java.util.List;
@@ -37,13 +38,13 @@ public class JumpAndRun {
     @AllArgsConstructor
     public enum Difficulty {
 
-        EASY(1, "§a"),
-        NORMAL(2, "§6"),
-        HARD(3, "§c"),
-        EXTREME(4, "§b");
+        EASY(1, NamedTextColor.GREEN),
+        NORMAL(2, NamedTextColor.GOLD),
+        HARD(3, NamedTextColor.RED),
+        EXTREME(4, NamedTextColor.AQUA);
 
         private final int id;
-        private final String color;
+        private final NamedTextColor color;
 
         public static Difficulty getDifficultyById(int id) {
             for (Difficulty difficulty : values()) {

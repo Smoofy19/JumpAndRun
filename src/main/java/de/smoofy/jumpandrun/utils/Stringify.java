@@ -12,6 +12,6 @@ public class Stringify {
         int minutes = (int) ((time / 1000) / 60);
         int seconds = (int) ((time / 1000) % 60);
 
-        return minutes + ":" + seconds;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 }

@@ -9,19 +9,24 @@ import de.smoofy.jumpandrun.utils.Stringify;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author - Smoofy
@@ -46,6 +51,9 @@ public class JumpAndRunManager {
     private final Map<Player, Object[]> jumpAndRunData;
     private final Map<Player, SetupStep> setup;
 
+    private NamespacedKey checkpointKey;
+    private NamespacedKey abortKey;
+
     private ItemStack backToCheckpointItem;
     private ItemStack abortItem;
 
@@ -53,109 +61,162 @@ public class JumpAndRunManager {
         File directory = new File(Bukkit.getWorldContainer() + "/plugins/JumpAndRun/");
         if (Files.notExists(directory.toPath())) directory.mkdirs();
 
-        this.configFile = new ConfigFile<>(directory.getPath() + "/JumpAndRuns.json", new TypeToken<Map<String, JumpAndRun>>() {
-        }.getType());
+        this.configFile = new ConfigFile<>(directory.getPath() + "/JumpAndRuns.json",
+                new TypeToken<Map<String, JumpAndRun>>() {}.getType());
 
         this.jumpAndRuns = Maps.newHashMap();
         this.jumpAndRunData = Maps.newHashMap();
         this.setup = Maps.newHashMap();
 
-        loadJumpAndRuns();
+        this.checkpointKey = NamespacedKey.fromString("back_to_checkpoint", JAR.getInstance());
+        this.abortKey = NamespacedKey.fromString("abort", JAR.getInstance());
+
+        this.backToCheckpointItem = this.checkpointItem();
+        this.abortItem = this.abortItem();
+
+        this.loadJumpAndRuns();
     }
 
     public boolean isInJumpAndRun(Player player) {
-        return jumpAndRunData.containsKey(player);
+        return this.jumpAndRunData.containsKey(player);
     }
 
     public void enterJumpAndRun(Player player, JumpAndRun jumpAndRun) {
-        if (!isInJumpAndRun(player)) {
-            jumpAndRunData.put(player, createJumpAndRunData(jumpAndRun));
-            player.showTitle(Title.title(Component.text(jumpAndRun.getDifficulty().getColor() + "§l" + jumpAndRun.getName()),
-                    Component.text("§agestartet"), Title.Times.times(Duration.ofSeconds(2), Duration.ofSeconds(5), Duration.ofSeconds(2))));
-            player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast das §2JumpAndRun §l" + jumpAndRun.getName() +
-                    "§7 von §2" + jumpAndRun.getBuilder() + " §7betreten§8."));
-            player.sendMessage(Component.text(JAR.getPrefix() + "§7Difficulty§8: " + jumpAndRun.getDifficulty().getColor() +
-                    jumpAndRun.getDifficulty().name() + " §8║ §7Checkpoints§8: §2" + jumpAndRun.getCheckpoints().size()));
+        if (!this.isInJumpAndRun(player)) {
+            this.jumpAndRunData.put(player, this.createJumpAndRunData(jumpAndRun));
 
-            backToCheckpointItem = new ItemStack(Material.ORANGE_DYE);
-            ItemMeta checkpointMeta = backToCheckpointItem.getItemMeta();
-            assert checkpointMeta != null;
-            checkpointMeta.displayName(Component.text("§6Zurück zum Checkpoint"));
-            backToCheckpointItem.setItemMeta(checkpointMeta);
-            abortItem = new ItemStack(Material.RED_DYE);
-            ItemMeta abortMeta = abortItem.getItemMeta();
-            assert abortMeta != null;
-            abortMeta.displayName(Component.text("§cJumpAndRun abbrechen"));
-            abortItem.setItemMeta(abortMeta);
-            player.getInventory().addItem(backToCheckpointItem, abortItem);
+            player.showTitle(Title.title(
+                    Component.text(jumpAndRun.getName(), jumpAndRun.getDifficulty().getColor(), TextDecoration.BOLD),
+                    Component.text("gestartet", NamedTextColor.GREEN),
+                    Title.Times.times(Duration.ofSeconds(2), Duration.ofSeconds(5), Duration.ofSeconds(2))));
+
+            player.sendMessage(JAR.getPrefix()
+                    .append(Component.text("Du hast das ", NamedTextColor.GRAY))
+                    .append(Component.text("JumpAndRun ", NamedTextColor.GREEN))
+                    .append(Component.text(jumpAndRun.getName(), NamedTextColor.GREEN, TextDecoration.BOLD))
+                    .append(Component.text(" von ", NamedTextColor.GRAY))
+                    .append(Component.text(jumpAndRun.getBuilder(), NamedTextColor.GREEN))
+                    .append(Component.text(" betreten.", NamedTextColor.GRAY)));
+
+            player.sendMessage(JAR.getPrefix()
+                    .append(Component.text("Difficulty", NamedTextColor.GRAY))
+                    .append(Component.text(": ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(jumpAndRun.getDifficulty().name(), jumpAndRun.getDifficulty().getColor()))
+                    .append(Component.text(" ║ ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text("Checkpoints", NamedTextColor.GRAY))
+                    .append(Component.text(": ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(jumpAndRun.getCheckpoints().size(), NamedTextColor.DARK_GREEN)));
+
+            player.getInventory().addItem(this.backToCheckpointItem, this.abortItem);
         } else {
-            player.sendMessage(Component.text(JAR.getPrefix() + "§7Du musst dein vorheriges JumpAndRun §cbeenden§7, bevor du ein neues JumpAndRun betrittst§8."));
+            player.sendMessage(JAR.getPrefix()
+                    .append(Component.text("Du musst dein vorheriges JumpAndRun ", NamedTextColor.GRAY))
+                    .append(Component.text("beenden", NamedTextColor.RED))
+                    .append(Component.text(", bevor du ein neues JumpAndRun betrittst.", NamedTextColor.GRAY)));
         }
     }
 
     public void abortJumpAndRun(Player player) {
-        if (isInJumpAndRun(player)) {
-            Object[] data = jumpAndRunData.get(player);
+        if (this.isInJumpAndRun(player)) {
+            Object[] data = this.jumpAndRunData.get(player);
             JumpAndRun jumpAndRun = (JumpAndRun) data[0];
-            player.showTitle(Title.title(Component.text(jumpAndRun.getDifficulty().getColor() + "§l" + jumpAndRun.getName()),
-                    Component.text("§cabgebrochen"), Title.Times.times(Duration.ofSeconds(2), Duration.ofSeconds(5), Duration.ofSeconds(2))));
-            player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast das §2JumpAndRun §l" + jumpAndRun.getName() +
-                    "§7 von §2" + jumpAndRun.getBuilder() + " §7abgebrochen§8."));
-            player.sendMessage(Component.text(JAR.getPrefix() + "§7Difficulty§8: " + jumpAndRun.getDifficulty().getColor() +
-                    jumpAndRun.getDifficulty().name() + " §8║ §7Spielzeit§8: §2" + Stringify.time(System.currentTimeMillis() - (long) data[3]) +
-                    " §8║ §7Fails§8: §2" + data[1]));
-            jumpAndRunData.remove(player);
 
-            player.getInventory().removeItem(backToCheckpointItem, abortItem);
+            player.showTitle(Title.title(
+                    Component.text(jumpAndRun.getName(), jumpAndRun.getDifficulty().getColor(), TextDecoration.BOLD),
+                    Component.text("abgebrochen", NamedTextColor.RED),
+                    Title.Times.times(Duration.ofSeconds(2), Duration.ofSeconds(5), Duration.ofSeconds(2))));
+
+            player.sendMessage(JAR.getPrefix()
+                    .append(Component.text("Du hast das ", NamedTextColor.GRAY))
+                    .append(Component.text("JumpAndRun ", NamedTextColor.GREEN))
+                    .append(Component.text(jumpAndRun.getName(), NamedTextColor.GREEN, TextDecoration.BOLD))
+                    .append(Component.text(" von ", NamedTextColor.GRAY))
+                    .append(Component.text(jumpAndRun.getBuilder(), NamedTextColor.GREEN))
+                    .append(Component.text(" abgebrochen.", NamedTextColor.GRAY)));
+
+            player.sendMessage(JAR.getPrefix()
+                    .append(Component.text("Difficulty", NamedTextColor.GRAY))
+                    .append(Component.text(": ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(jumpAndRun.getDifficulty().name(), jumpAndRun.getDifficulty().getColor()))
+                    .append(Component.text(" ║ ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text("Spielzeit", NamedTextColor.GRAY))
+                    .append(Component.text(": ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(Stringify.time(System.currentTimeMillis() - (long) data[3]), NamedTextColor.DARK_GREEN))
+                    .append(Component.text(" ║ ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text("Fails", NamedTextColor.GRAY))
+                    .append(Component.text(": ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(data[1].toString(), NamedTextColor.DARK_GREEN)));
+
+            this.jumpAndRunData.remove(player);
+
+            player.getInventory().removeItem(this.backToCheckpointItem, this.abortItem);
         }
     }
 
     public void finishJumpAndRun(Player player) {
-        if (isInJumpAndRun(player)) {
-            Object[] data = jumpAndRunData.get(player);
+        if (this.isInJumpAndRun(player)) {
+            Object[] data = this.jumpAndRunData.get(player);
             JumpAndRun jumpAndRun = (JumpAndRun) data[0];
-            player.showTitle(Title.title(Component.text(jumpAndRun.getDifficulty().getColor() + "§l" + jumpAndRun.getName()),
-                    Component.text("§ageschafft"), Title.Times.times(Duration.ofSeconds(2), Duration.ofSeconds(5), Duration.ofSeconds(2))));
-            player.sendMessage(Component.text(JAR.getPrefix() + "§7Du hast das §2JumpAndRun §l" + jumpAndRun.getName() +
-                    "§7 von §2" + jumpAndRun.getBuilder() + " §7geschafft§8."));
-            player.sendMessage(Component.text(JAR.getPrefix() + "§7Difficulty§8: " + jumpAndRun.getDifficulty().getColor() +
-                    jumpAndRun.getDifficulty().name() + " §8║ §7Spielzeit§8: §2" + Stringify.time(System.currentTimeMillis() - (long) data[3]) +
-                    " §8║ §7Fails§8: §2" + data[1]));
-            jumpAndRunData.remove(player);
+            player.showTitle(Title.title(
+                    Component.text(jumpAndRun.getName(), jumpAndRun.getDifficulty().getColor(), TextDecoration.BOLD),
+                    Component.text("geschafft", NamedTextColor.GREEN),
+                    Title.Times.times(Duration.ofSeconds(2), Duration.ofSeconds(5), Duration.ofSeconds(2))));
 
-            player.getInventory().removeItem(backToCheckpointItem, abortItem);
+            player.sendMessage(JAR.getPrefix()
+                    .append(Component.text("Du hast das ", NamedTextColor.GRAY))
+                    .append(Component.text("JumpAndRun ", NamedTextColor.GREEN))
+                    .append(Component.text(jumpAndRun.getName(), NamedTextColor.GREEN, TextDecoration.BOLD))
+                    .append(Component.text(" von ", NamedTextColor.GRAY))
+                    .append(Component.text(jumpAndRun.getBuilder(), NamedTextColor.GREEN))
+                    .append(Component.text(" geschafft.", NamedTextColor.GRAY)));
+
+            player.sendMessage(JAR.getPrefix()
+                    .append(Component.text("Difficulty", NamedTextColor.GRAY))
+                    .append(Component.text(": ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(jumpAndRun.getDifficulty().name(), jumpAndRun.getDifficulty().getColor()))
+                    .append(Component.text(" ║ ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text("Spielzeit", NamedTextColor.GRAY))
+                    .append(Component.text(": ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(Stringify.time(System.currentTimeMillis() - (long) data[3]), NamedTextColor.DARK_GREEN))
+                    .append(Component.text(" ║ ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text("Fails", NamedTextColor.GRAY))
+                    .append(Component.text(": ", NamedTextColor.DARK_GRAY))
+                    .append(Component.text(data[1].toString(), NamedTextColor.DARK_GREEN)));
+
+            this.jumpAndRunData.remove(player);
+
+            player.getInventory().removeItem(this.backToCheckpointItem, this.abortItem);
         }
     }
 
     public void addJumpAndRun(String name, String builder, JumpAndRun.Difficulty difficulty, Location startLocation, Location endLocation, List<Location> checkpoints) {
         JumpAndRun jumpAndRun = new JumpAndRun(name, builder, difficulty, startLocation, endLocation, checkpoints);
-        jumpAndRuns.put(name, jumpAndRun);
-        saveJumpAndRuns();
+        this.jumpAndRuns.put(name, jumpAndRun);
+        this.saveJumpAndRuns();
     }
 
     public JumpAndRun getJumpAndRun(String name) {
-        return jumpAndRuns.get(name);
+        return this.jumpAndRuns.get(name);
     }
 
     public JumpAndRun getJumpAndRun(Location startLocation) {
-        for (JumpAndRun jumpAndRun : jumpAndRuns.values())
+        for (JumpAndRun jumpAndRun : this.jumpAndRuns.values())
             if (jumpAndRun.getStartLocation().getBlock().getLocation().equals(startLocation.getBlock().getLocation()))
                 return jumpAndRun;
         return null;
     }
 
     public void deleteJumpAndRun(String name) {
-        jumpAndRuns.remove(name);
+        this.jumpAndRuns.remove(name);
     }
 
     public void loadJumpAndRuns() {
         this.configFile.load();
-        if (configFile.getContent() != null) jumpAndRuns = this.configFile.getContent();
+        if (this.configFile.getContent() != null) this.jumpAndRuns = this.configFile.getContent();
     }
 
     public void saveJumpAndRuns() {
-        if (jumpAndRuns != null) this.configFile.store(jumpAndRuns);
-        else this.configFile.store(Maps.newHashMap());
+        this.configFile.store(Objects.requireNonNullElseGet(this.jumpAndRuns, Maps::newHashMap));
     }
 
     private Object[] createJumpAndRunData(JumpAndRun jumpAndRun) {
@@ -168,24 +229,54 @@ public class JumpAndRunManager {
     }
 
     public void addFail(Player player) {
-        Object[] data = jumpAndRunData.get(player);
-        jumpAndRunData.remove(player);
+        Object[] data = this.jumpAndRunData.get(player);
+        this.jumpAndRunData.remove(player);
         Object[] newData = new Object[]{data[0], (int) data[1] + 1, data[2], data[3]};
-        jumpAndRunData.put(player, newData);
+        this.jumpAndRunData.put(player, newData);
     }
 
     public void updateCheckpoint(Player player, Location location) {
-        Object[] data = jumpAndRunData.get(player);
-        jumpAndRunData.remove(player);
+        Object[] data = this.jumpAndRunData.get(player);
+        this.jumpAndRunData.remove(player);
         Object[] newData = new Object[]{data[0], data[1], location, data[3]};
-        jumpAndRunData.put(player, newData);
+        this.jumpAndRunData.put(player, newData);
     }
 
     public Location getCheckpoint(Player player) {
-        return (Location) jumpAndRunData.get(player)[2];
+        return (Location) this.jumpAndRunData.get(player)[2];
     }
 
     public void addCheckpoint(Location location) {
-        checkpoints.add(location);
+        this.checkpoints.add(location);
+    }
+
+    private ItemStack checkpointItem() {
+        ItemStack itemStack = new ItemStack(Material.ORANGE_DYE);
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        NamespacedKey namespacedKey = this.checkpointKey;
+
+        if (namespacedKey == null) return null;
+
+        itemMeta.getPersistentDataContainer().set(namespacedKey, PersistentDataType.INTEGER, 0);
+        itemMeta.displayName(Component.text("Zurück zum Checkpoint", NamedTextColor.GOLD));
+
+        itemStack.setItemMeta(itemMeta);
+
+        return itemStack;
+    }
+
+    private ItemStack abortItem() {
+        ItemStack itemStack = new ItemStack(Material.RED_DYE);
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        NamespacedKey namespacedKey = this.abortKey;
+
+        if (namespacedKey == null) return null;
+
+        itemMeta.getPersistentDataContainer().set(namespacedKey, PersistentDataType.INTEGER, 0);
+        itemMeta.displayName(Component.text("JumpAndRun abbrechen", NamedTextColor.RED));
+
+        itemStack.setItemMeta(itemMeta);
+
+        return itemStack;
     }
 }

@@ -4,6 +4,8 @@ import de.smoofy.jumpandrun.JumpAndRunCommand;
 import de.smoofy.jumpandrun.JumpAndRunListener;
 import de.smoofy.jumpandrun.JumpAndRunManager;
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -26,24 +28,13 @@ public final class JAR extends JavaPlugin {
 
         this.jumpAndRunManager = new JumpAndRunManager();
 
-        registerListener();
-        registerCommands();
-    }
-
-    @Override
-    public void onDisable() {
-
-    }
-
-    private void registerListener() {
         new JumpAndRunListener();
-    }
-
-    private void registerCommands() {
         new JumpAndRunCommand();
     }
 
-    public static String getPrefix() {
-        return "§8[§2JAR§8] ";
+    public static Component getPrefix() {
+        return Component.text("[", NamedTextColor.DARK_GRAY)
+                .append(Component.text("JAR", NamedTextColor.DARK_GREEN))
+                .append(Component.text("] ", NamedTextColor.DARK_GRAY));
     }
 }

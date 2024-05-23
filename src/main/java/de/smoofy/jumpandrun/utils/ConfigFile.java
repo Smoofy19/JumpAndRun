@@ -40,12 +40,12 @@ public class ConfigFile<T> {
 
     public void load() {
         try {
-            if (path.toFile().exists()) {
-                Reader reader = Files.newBufferedReader(path);
+            if (this.path.toFile().exists()) {
+                Reader reader = Files.newBufferedReader(this.path);
                 Gson gson = new GsonBuilder().registerTypeAdapter(Location.class, new GsonLocationAdapter()).create();
-                this.content = gson.fromJson(reader, contentType);
+                this.content = gson.fromJson(reader, this.contentType);
             } else {
-                store(defaultContent);
+                store(this.defaultContent);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -53,15 +53,15 @@ public class ConfigFile<T> {
     }
 
     public void store(T content) {
-        if (!path.toFile().exists()) {
+        if (!this.path.toFile().exists()) {
             try {
-                if (!path.toFile().createNewFile())
-                    JAR.getInstance().getLogger().log(Level.CONFIG, "Could not create config " + path);
+                if (!this.path.toFile().createNewFile())
+                    JAR.getInstance().getLogger().log(Level.CONFIG, "Could not create config " + this.path);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+        try (BufferedWriter writer = Files.newBufferedWriter(this.path)) {
             Gson gson = new GsonBuilder().registerTypeAdapter(Location.class, new GsonLocationAdapter()).create();
             gson.toJson(content, this.contentType, writer);
             this.content = content;
@@ -71,7 +71,7 @@ public class ConfigFile<T> {
     }
 
     public T getContent() {
-        if (content == null) JAR.getInstance().getLogger().log(Level.CONFIG, "No Content founded!");
-        return content;
+        if (this.content == null) JAR.getInstance().getLogger().log(Level.CONFIG, "No Content founded!");
+        return this.content;
     }
 }

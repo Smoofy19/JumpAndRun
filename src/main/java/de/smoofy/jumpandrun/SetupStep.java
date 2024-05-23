@@ -8,10 +8,5 @@ package de.smoofy.jumpandrun;
  */
 public enum SetupStep {
 
-    NAME,
-    BUILDER,
-    DIFFICULTY,
-    STARTLOCATION,
-    ENDLOCATION,
-    CHECKPOINTS;
+    NAME, BUILDER, DIFFICULTY, START_LOCATION, END_LOCATION, CHECKPOINTS;
 }

@@ -1,11 +1,11 @@
-specVersion: 1
+specVersion: 2
 type: plugin
 name: JumpAndRun
 authors:
   - Smoofy19
 supportedPlatforms:
   - paper
-supportedGameVersions: ^1.19.3
+supportedGameVersions: ^1.20.4
 category: misc
 introduction: Ein Plugin, um JumpandRun's zu erstellen.
 description: |
